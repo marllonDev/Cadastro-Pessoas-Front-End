@@ -1,4 +1,5 @@
 // Página inicial do app, permite alternar tema, idioma e navegar para cadastro de pessoa ou carro
+// Importações necessárias para o funcionamento da página.
 import 'package:flutter/material.dart';
 
 import '../widgets/custom_app_bar.dart';

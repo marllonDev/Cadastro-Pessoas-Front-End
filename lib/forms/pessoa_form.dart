@@ -1,5 +1,10 @@
-// Formulário para cadastro de pessoas. Permite inserir nome, ano e email.
+// Formulário para cadastro de pessoas. Permite inserir nome, idade e email.
+// Importações necessárias para o funcionamento do formulário.
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 // Widget de formulário de pessoa, recebe função de salvamento e idioma.
 class PessoaForm extends StatefulWidget {
@@ -19,21 +24,21 @@ class _PessoaFormState extends State<PessoaForm> {
   final _formKey = GlobalKey<FormState>();
   // Controladores para os campos de texto
   final TextEditingController _nomeController = TextEditingController();
-  final TextEditingController _anoController = TextEditingController();
+  final TextEditingController _idadeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
 
   @override
   void dispose() {
     // Libera os controladores ao destruir o widget.
     _nomeController.dispose();
-    _anoController.dispose();
+    _idadeController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
   // Labels dinâmicos conforme o idioma selecionado.
   String get _nomeLabel => widget.language == 'en' ? 'Name' : 'Nome';
-  String get _anoLabel => widget.language == 'en' ? 'Year' : 'Ano';
+  String get _idadeLabel => widget.language == 'en' ? 'Age' : 'Idade';
   String get _emailLabel => widget.language == 'en' ? 'Email' : 'E-mail';
   String get _saveLabel => widget.language == 'en' ? 'Save' : 'Salvar';
 
@@ -87,11 +92,11 @@ class _PessoaFormState extends State<PessoaForm> {
                                   : null,
                         ),
                         const SizedBox(height: 16),
-                        // Campo para ano de nascimento
+                        // Campo para idade
                         TextFormField(
-                          controller: _anoController,
+                          controller: _idadeController,
                           decoration: InputDecoration(
-                              labelText: _anoLabel,
+                              labelText: _idadeLabel,
                               border: const OutlineInputBorder()),
                           keyboardType: TextInputType.number,
                           validator: (value) {
@@ -100,13 +105,11 @@ class _PessoaFormState extends State<PessoaForm> {
                                   ? 'Required'
                                   : 'Obrigatório';
                             }
-                            final year = int.tryParse(value);
-                            if (year == null ||
-                                year < 1900 ||
-                                year > DateTime.now().year) {
+                            final idade = int.tryParse(value);
+                            if (idade == null || idade < 0 || idade > 120) {
                               return widget.language == 'en'
-                                  ? 'Enter a valid year'
-                                  : 'Informe um ano válido';
+                                  ? 'Enter a valid age'
+                                  : 'Informe uma idade válida';
                             }
                             return null;
                           },
@@ -147,13 +150,54 @@ class _PessoaFormState extends State<PessoaForm> {
                                   borderRadius: BorderRadius.circular(12)),
                               textStyle: const TextStyle(fontSize: 18),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-                                widget.onSave({
+                                final data = {
                                   'nome': _nomeController.text.trim(),
-                                  'ano': int.parse(_anoController.text.trim()),
+                                  'idade':
+                                      int.parse(_idadeController.text.trim()),
                                   'email': _emailController.text.trim(),
-                                });
+                                };
+                                try {
+                                  final url = Uri.parse(
+                                      '${getBackendBaseUrl()}/pessoas');
+                                  final response = await http.post(
+                                    url,
+                                    headers: {
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: jsonEncode(data),
+                                  );
+
+                                  if (response.statusCode == 201) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(widget.language == 'en'
+                                              ? 'Person saved successfully!'
+                                              : 'Pessoa salva com sucesso!')),
+                                    );
+                                    Navigator.pop(context);
+                                  } else {
+                                    final errorMessage = response.statusCode ==
+                                            400
+                                        ? jsonDecode(response.body)['error']
+                                        : widget.language == 'en'
+                                            ? 'Error saving person (Code ${response.statusCode})'
+                                            : 'Erro ao salvar pessoa (Código ${response.statusCode})';
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(errorMessage)),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(widget.language == 'en'
+                                          ? 'Network error: ${e.toString()}'
+                                          : 'Erro de rede: ${e.toString()}'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             label: Text(_saveLabel),
@@ -169,5 +213,14 @@ class _PessoaFormState extends State<PessoaForm> {
         ),
       ),
     );
+  }
+}
+
+// Função utilitária para obter a base da URL do backend
+String getBackendBaseUrl() {
+  if (kIsWeb) {
+    return 'http://localhost:8000';
+  } else {
+    return 'http://10.0.2.2:8000';
   }
 }

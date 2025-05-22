@@ -1,4 +1,5 @@
 // Ponto de entrada da aplicação Flutter para cadastro de pessoas e carros.
+// Importações necessárias para o funcionamento do app.
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -9,7 +10,7 @@ import 'forms/carro_form.dart';
 import 'forms/pessoa_form.dart';
 import 'pages/home_page.dart';
 
-// Função principal que inicializa o app.
+// Função principal do aplicativo, ponto de entrada.
 void main() {
   runApp(const MyApp());
 }

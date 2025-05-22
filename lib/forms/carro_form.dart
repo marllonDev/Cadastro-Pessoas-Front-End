@@ -1,5 +1,10 @@
 // Formulário para cadastro de carros. Permite inserir nome, ano, marca e preço do carro.
+// Importações necessárias para o funcionamento do formulário.
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 // Widget de formulário de carro, recebe função de salvamento e idioma.
 class CarroForm extends StatefulWidget {
@@ -141,16 +146,61 @@ class _CarroFormState extends State<CarroForm> {
                                   borderRadius: BorderRadius.circular(12)),
                               textStyle: const TextStyle(fontSize: 18),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               if (_formKey.currentState!.validate()) {
-                                widget.onSave({
-                                  'nome': _nomeController.text,
-                                  'ano': int.tryParse(_anoController.text) ?? 0,
-                                  'marca': _marcaController.text,
-                                  'preco':
-                                      double.tryParse(_precoController.text) ??
-                                          0.0,
-                                });
+                                try {
+                                  final data = {
+                                    'nome': _nomeController.text.trim(),
+                                    'ano': int.tryParse(
+                                            _anoController.text.trim()) ??
+                                        0,
+                                    'marca': _marcaController.text.trim(),
+                                    'preco': double.tryParse(
+                                            _precoController.text.trim()) ??
+                                        0.0,
+                                  };
+                                  final baseUrl = getBackendBaseUrl();
+                                  final url = Uri.parse(
+                                      '${getBackendBaseUrl()}/carros');
+                                  final response = await http
+                                      .post(
+                                        url,
+                                        headers: {
+                                          'Content-Type': 'application/json'
+                                        },
+                                        body: jsonEncode(data),
+                                      )
+                                      .timeout(const Duration(seconds: 10));
+
+                                  if (response.statusCode == 201) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(widget.language == 'en'
+                                            ? 'Car saved successfully!'
+                                            : 'Carro salvo com sucesso!'),
+                                      ),
+                                    );
+                                    Navigator.pop(context);
+                                  } else {
+                                    final errorMessage = response.statusCode ==
+                                            400
+                                        ? jsonDecode(response.body)['error']
+                                        : widget.language == 'en'
+                                            ? 'Error saving car (Code \${response.statusCode})'
+                                            : 'Erro ao salvar carro (Código \${response.statusCode})';
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(errorMessage)),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(widget.language == 'en'
+                                          ? 'Network error: ${e.toString()}'
+                                          : 'Erro de rede: ${e.toString()}'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             label: Text(_saveLabel),
@@ -166,5 +216,14 @@ class _CarroFormState extends State<CarroForm> {
         ),
       ),
     );
+  }
+}
+
+// Função utilitária para obter a base da URL do backend
+String getBackendBaseUrl() {
+  if (kIsWeb) {
+    return 'http://localhost:8000';
+  } else {
+    return 'http://10.0.2.2:8000';
   }
 }
