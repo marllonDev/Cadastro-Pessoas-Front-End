@@ -50,8 +50,6 @@ Aplicação mobile desenvolvida em Flutter para cadastro de pessoas e carros, co
     }
     ```
 
-- **Listar Pessoas:**
-  - `GET /pessoas`
 
 ### Carro
 - **Criar Carro:**
@@ -66,8 +64,6 @@ Aplicação mobile desenvolvida em Flutter para cadastro de pessoas e carros, co
     }
     ```
 
-- **Listar Carros:**
-  - `GET /carros`
 
 ## Exemplos de Chamada à API
 
